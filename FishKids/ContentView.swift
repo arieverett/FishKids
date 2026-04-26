@@ -2,20 +2,22 @@
 //  ContentView.swift
 //  FishKids
 //
-//  Created by Ari Everett on 4/26/26.
+//  Created by Ari Everett on 4/21/26.
 //
 
 import SwiftUI
+import SpriteKit
 
 struct ContentView: View {
+    var scene: SKScene {
+        let scene = FeedFrenzyScene(size: UIScreen.main.bounds.size)
+        scene.scaleMode = .resizeFill
+        return scene
+    }
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        SpriteView(scene: scene)
+            .ignoresSafeArea()
     }
 }
 
