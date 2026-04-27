@@ -12,25 +12,33 @@ struct MainMenuView: View {
 
     var body: some View {
         ZStack {
-            Color.cyan
+            Image("menuBackground")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            Color.black.opacity(0.18)
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
                 Text("Fish Kids")
-                    .font(.system(size: 46, weight: .bold))
+                    .font(.system(size: 48, weight: .bold))
                     .foregroundStyle(.white)
+                    .shadow(radius: 6)
 
                 Text("Choose a mini game")
-                    .font(.title3)
+                    .font(.title3.bold())
                     .foregroundStyle(.white)
+                    .shadow(radius: 4)
 
                 Button(action: startFeedFrenzy) {
                     Text("Feed Frenzy")
                         .font(.title2.bold())
                         .foregroundStyle(.blue)
-                        .frame(width: 240, height: 60)
-                        .background(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .frame(width: 250, height: 62)
+                        .background(.white.opacity(0.92))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(radius: 6)
                 }
 
                 VStack(spacing: 12) {
@@ -38,9 +46,14 @@ struct MainMenuView: View {
                     Text("Drop Dive")
                 }
                 .font(.headline)
-                .foregroundStyle(.white.opacity(0.6))
-                .padding(.top, 10)
+                .foregroundStyle(.white.opacity(0.75))
+                .shadow(radius: 4)
+                .padding(.top, 8)
             }
+            .padding()
+        }
+        .onAppear {
+            AudioManager.shared.playMusic(named: "bgMusic")
         }
     }
 }

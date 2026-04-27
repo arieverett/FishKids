@@ -17,6 +17,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     
     var gameState: GameState = .playing
     
+    var bgMusicPlayer: AVAudioPlayer?
+    
     var player: SKLabelNode!
     var food: SKLabelNode!
     var obstacles: [SKLabelNode] = []
@@ -47,8 +49,13 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func didMove(to view: SKView) {
+        
+        AudioManager.shared.playMusic(named: "gameMusic.mp3")
+        
         startGame()
     }
+    
+
     
     func startGame() {
         removeAllChildren()
@@ -63,6 +70,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         gameState = .playing
         
         loadSounds()
+        playBackgroundMusic()
         makeBubbles()
         makePlayer()
         makeFood()
@@ -81,6 +89,16 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         if let trashAsset = NSDataAsset(name: "trashSound") {
             trashAudioPlayer = try? AVAudioPlayer(data: trashAsset.data)
             trashAudioPlayer?.prepareToPlay()
+        }
+    }
+    
+    func playBackgroundMusic() {
+        if let musicAsset = NSDataAsset(name: "bgMusic") {
+            bgMusicPlayer = try? AVAudioPlayer(data: musicAsset.data)
+            bgMusicPlayer?.numberOfLoops = -1 // loop forever
+            bgMusicPlayer?.volume = 0.3
+            bgMusicPlayer?.prepareToPlay()
+            bgMusicPlayer?.play()
         }
     }
     
@@ -271,7 +289,15 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             score += 1
             eatAudioPlayer?.currentTime = 0
             eatAudioPlayer?.play()
-            respawnFood()
+            
+            food.removeFromParent()
+            
+            let wait = SKAction.wait(forDuration: 0.2)
+            let spawn = SKAction.run { [weak self] in
+                self?.makeFood()
+            }
+            
+            run(SKAction.sequence([wait, spawn]))
         }
         
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
@@ -318,5 +344,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         restartLabel.position = CGPoint(x: frame.midX, y: frame.midY - 45)
         restartLabel.zPosition = 20
         addChild(restartLabel)
+        
+        AudioManager.shared.stopMusic()
     }
 }
