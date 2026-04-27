@@ -9,8 +9,9 @@ import SpriteKit
 
 class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
-    var player: SKSpriteNode!
+    var player: SKLabelNode!
     var food: SKShapeNode!
+    var trash: SKShapeNode!
     var scoreLabel: SKLabelNode!
     var timerLabel: SKLabelNode!
     var gameOverLabel: SKLabelNode!
@@ -32,30 +33,49 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     struct PhysicsCategory {
         static let player: UInt32 = 0x1 << 0
         static let food: UInt32 = 0x1 << 1
+        static let trash: UInt32 = 0x1 << 2
     }
 
     override func didMove(to view: SKView) {
-        backgroundColor = SKColor.systemTeal
+        backgroundColor = SKColor(red: 0.05, green: 0.55, blue: 0.75, alpha: 1.0)
 
         physicsWorld.contactDelegate = self
 
+        makeBubbles()
         makePlayer()
         makeFood()
+        makeTrash()
         makeScoreLabel()
         makeTimerLabel()
         startTimer()
     }
 
+    func makeBubbles() {
+        for _ in 0..<18 {
+            let bubble = SKShapeNode(circleOfRadius: CGFloat.random(in: 4...12))
+            bubble.fillColor = .clear
+            bubble.strokeColor = .white.withAlphaComponent(0.45)
+            bubble.lineWidth = 2
+            bubble.position = CGPoint(
+                x: CGFloat.random(in: 20...frame.width - 20),
+                y: CGFloat.random(in: 20...frame.height - 20)
+            )
+            bubble.zPosition = 1
+            addChild(bubble)
+        }
+    }
+
     func makePlayer() {
-        player = SKSpriteNode(color: .orange, size: CGSize(width: 40, height: 40))
+        player = SKLabelNode(text: "🐠")
+        player.fontSize = 42
         player.position = CGPoint(x: frame.midX, y: frame.midY)
         player.zPosition = 5
 
-        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
+        player.physicsBody = SKPhysicsBody(circleOfRadius: 22)
         player.physicsBody?.isDynamic = true
         player.physicsBody?.affectedByGravity = false
         player.physicsBody?.categoryBitMask = PhysicsCategory.player
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.food
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.food | PhysicsCategory.trash
         player.physicsBody?.collisionBitMask = 0
 
         addChild(player)
@@ -73,7 +93,22 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         food.physicsBody?.categoryBitMask = PhysicsCategory.food
 
         addChild(food)
-        moveFoodToRandomPosition()
+        moveNodeToRandomPosition(food)
+    }
+
+    func makeTrash() {
+        trash = SKShapeNode(rectOf: CGSize(width: 32, height: 32), cornerRadius: 6)
+        trash.fillColor = .gray
+        trash.strokeColor = .white
+        trash.lineWidth = 3
+        trash.zPosition = 4
+
+        trash.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 32, height: 32))
+        trash.physicsBody?.isDynamic = false
+        trash.physicsBody?.categoryBitMask = PhysicsCategory.trash
+
+        addChild(trash)
+        moveNodeToRandomPosition(trash)
     }
 
     func makeScoreLabel() {
@@ -117,13 +152,13 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         run(SKAction.repeatForever(sequence), withKey: "timer")
     }
 
-    func moveFoodToRandomPosition() {
-        let padding: CGFloat = 50
+    func moveNodeToRandomPosition(_ node: SKNode) {
+        let padding: CGFloat = 60
 
         let randomX = CGFloat.random(in: padding...(frame.width - padding))
         let randomY = CGFloat.random(in: padding...(frame.height - padding))
 
-        food.position = CGPoint(x: randomX, y: randomY)
+        node.position = CGPoint(x: randomX, y: randomY)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -139,15 +174,24 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func movePlayer(to point: CGPoint) {
-        let moveAction = SKAction.move(to: point, duration: 0.5)
+        let moveAction = SKAction.move(to: point, duration: 0.45)
         player.run(moveAction)
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
         guard gameIsOver == false else { return }
 
-        score += 1
-        moveFoodToRandomPosition()
+        let categories = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
+
+        if categories == PhysicsCategory.player | PhysicsCategory.food {
+            score += 1
+            moveNodeToRandomPosition(food)
+        }
+
+        if categories == PhysicsCategory.player | PhysicsCategory.trash {
+            score -= 1
+            moveNodeToRandomPosition(trash)
+        }
     }
 
     func endGame() {
@@ -157,7 +201,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         gameOverLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         gameOverLabel.text = "Game Over! Tap to Restart"
-        gameOverLabel.fontSize = 26
+        gameOverLabel.fontSize = 24
         gameOverLabel.fontColor = .white
         gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         gameOverLabel.zPosition = 20
