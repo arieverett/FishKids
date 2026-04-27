@@ -2,12 +2,12 @@
 //  FeedFrenzyScene.swift
 //  FishKids
 //
-//  Created by Ari Everett on 4/21/26.
+//  Created by Ari Everett on 4/26/26.
 //
 
 import SpriteKit
 
-class FeedFrenzyScene: SKScene {
+class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
     var player: SKSpriteNode!
     var food: SKShapeNode!
@@ -19,8 +19,15 @@ class FeedFrenzyScene: SKScene {
         }
     }
 
+    struct PhysicsCategory {
+        static let player: UInt32 = 0x1 << 0
+        static let food: UInt32 = 0x1 << 1
+    }
+
     override func didMove(to view: SKView) {
         backgroundColor = SKColor.systemTeal
+
+        physicsWorld.contactDelegate = self
 
         makePlayer()
         makeFood()
@@ -32,6 +39,13 @@ class FeedFrenzyScene: SKScene {
         player.position = CGPoint(x: frame.midX, y: frame.midY)
         player.zPosition = 5
 
+        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
+        player.physicsBody?.isDynamic = true
+        player.physicsBody?.affectedByGravity = false
+        player.physicsBody?.categoryBitMask = PhysicsCategory.player
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.food
+        player.physicsBody?.collisionBitMask = 0
+
         addChild(player)
     }
 
@@ -41,7 +55,10 @@ class FeedFrenzyScene: SKScene {
         food.strokeColor = .white
         food.lineWidth = 3
         food.zPosition = 4
-        food.name = "food"
+
+        food.physicsBody = SKPhysicsBody(circleOfRadius: 14)
+        food.physicsBody?.isDynamic = false
+        food.physicsBody?.categoryBitMask = PhysicsCategory.food
 
         addChild(food)
         moveFoodToRandomPosition()
@@ -72,17 +89,16 @@ class FeedFrenzyScene: SKScene {
         guard let touch = touches.first else { return }
 
         let location = touch.location(in: self)
-
-        if food.contains(location) {
-            score += 1
-            moveFoodToRandomPosition()
-        } else {
-            movePlayer(to: location)
-        }
+        movePlayer(to: location)
     }
 
     func movePlayer(to point: CGPoint) {
         let moveAction = SKAction.move(to: point, duration: 0.5)
         player.run(moveAction)
+    }
+
+    func didBegin(_ contact: SKPhysicsContact) {
+        score += 1
+        moveFoodToRandomPosition()
     }
 }
