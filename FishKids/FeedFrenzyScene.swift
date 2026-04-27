@@ -9,81 +9,117 @@ import SpriteKit
 import AVFoundation
 
 class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
-
+    
     enum GameState {
         case playing
         case gameOver
     }
-
+    
     var gameState: GameState = .playing
-
+    
     var player: SKLabelNode!
     var food: SKLabelNode!
     var obstacles: [SKLabelNode] = []
-
+    
     var scoreLabel: SKLabelNode!
     var timerLabel: SKLabelNode!
     var gameOverLabel: SKLabelNode!
-
+    
     var eatAudioPlayer: AVAudioPlayer?
     var trashAudioPlayer: AVAudioPlayer?
-
+    
     var score = 0 {
         didSet {
             scoreLabel?.text = "Score: \(score)"
         }
     }
-
+    
     var timeLeft = 30 {
         didSet {
             timerLabel?.text = "Time: \(timeLeft)"
         }
     }
-
+    
     struct PhysicsCategory {
         static let player: UInt32 = 0x1 << 0
         static let food: UInt32 = 0x1 << 1
         static let obstacle: UInt32 = 0x1 << 2
     }
-
+    
     override func didMove(to view: SKView) {
         startGame()
     }
-
+    
     func startGame() {
         removeAllChildren()
         removeAllActions()
-
+        
         backgroundColor = SKColor(red: 0.05, green: 0.55, blue: 0.75, alpha: 1.0)
         physicsWorld.contactDelegate = self
-
+        
         obstacles.removeAll()
         score = 0
         timeLeft = 30
         gameState = .playing
-
+        
         loadSounds()
         makeBubbles()
         makePlayer()
-        spawnFood()
+        makeFood()
         makeObstacles()
         makeScoreLabel()
         makeTimerLabel()
         startTimer()
     }
-
+    
     func loadSounds() {
         if let eatAsset = NSDataAsset(name: "eatSound") {
             eatAudioPlayer = try? AVAudioPlayer(data: eatAsset.data)
             eatAudioPlayer?.prepareToPlay()
         }
-
+        
         if let trashAsset = NSDataAsset(name: "trashSound") {
             trashAudioPlayer = try? AVAudioPlayer(data: trashAsset.data)
             trashAudioPlayer?.prepareToPlay()
         }
     }
-
+    
+    func safeGameRect() -> CGRect {
+        return CGRect(
+            x: 55,
+            y: 90,
+            width: frame.width - 110,
+            height: frame.height - 190
+        )
+    }
+    
+    func randomSafePosition(avoiding nodes: [SKNode], minimumDistance: CGFloat = 85) -> CGPoint {
+        let gameRect = safeGameRect()
+        
+        for _ in 0..<80 {
+            let point = CGPoint(
+                x: CGFloat.random(in: gameRect.minX...gameRect.maxX),
+                y: CGFloat.random(in: gameRect.minY...gameRect.maxY)
+            )
+            
+            let tooClose = nodes.contains { node in
+                distance(from: point, to: node.position) < minimumDistance
+            }
+            
+            if !tooClose {
+                return point
+            }
+        }
+        
+        return CGPoint(x: gameRect.midX, y: gameRect.midY)
+    }
+    
+    func distance(from a: CGPoint, to b: CGPoint) -> CGFloat {
+        let dx = a.x - b.x
+        let dy = a.y - b.y
+        return sqrt(dx * dx + dy * dy)
+    }
+    
     func makeBubbles() {
         for _ in 0..<18 {
             let bubble = SKShapeNode(circleOfRadius: CGFloat.random(in: 4...12))
@@ -96,61 +132,69 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             )
             bubble.zPosition = 1
             addChild(bubble)
-
+            
             let moveUp = SKAction.moveBy(x: 0, y: frame.height + 50, duration: Double.random(in: 8...14))
             let reset = SKAction.moveTo(y: -40, duration: 0)
             let sequence = SKAction.sequence([moveUp, reset])
             bubble.run(SKAction.repeatForever(sequence))
         }
     }
-
+    
     func makePlayer() {
         player = SKLabelNode(text: "🐠")
         player.fontSize = 46
         player.position = CGPoint(x: frame.midX, y: frame.midY)
         player.zPosition = 5
-
+        
         player.physicsBody = SKPhysicsBody(circleOfRadius: 22)
         player.physicsBody?.isDynamic = true
         player.physicsBody?.affectedByGravity = false
         player.physicsBody?.categoryBitMask = PhysicsCategory.player
         player.physicsBody?.contactTestBitMask = PhysicsCategory.food | PhysicsCategory.obstacle
         player.physicsBody?.collisionBitMask = 0
-
+        
         addChild(player)
     }
-
-    func spawnFood() {
+    
+    func makeFood() {
         food = SKLabelNode(text: "🍤")
         food.fontSize = 34
         food.zPosition = 4
-
+        
         food.physicsBody = SKPhysicsBody(circleOfRadius: 17)
         food.physicsBody?.isDynamic = false
         food.physicsBody?.categoryBitMask = PhysicsCategory.food
-
+        
         addChild(food)
-        moveNodeToRandomPosition(food)
+        respawnFood()
     }
-
+    
+    func respawnFood() {
+        let avoidNodes: [SKNode] = [player] + obstacles
+        food.position = randomSafePosition(avoiding: avoidNodes, minimumDistance: 95)
+    }
+    
     func makeObstacles() {
         let obstacleEmojis = ["🪨", "🪸", "⚓️", "🦀"]
-
+        
         for emoji in obstacleEmojis {
             let obstacle = SKLabelNode(text: emoji)
             obstacle.fontSize = 34
             obstacle.zPosition = 4
-
+            
             obstacle.physicsBody = SKPhysicsBody(circleOfRadius: 18)
             obstacle.physicsBody?.isDynamic = false
             obstacle.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
-
+            
             addChild(obstacle)
-            moveNodeToRandomPosition(obstacle)
+            
+            let avoidNodes: [SKNode] = [player, food] + obstacles
+            obstacle.position = randomSafePosition(avoiding: avoidNodes, minimumDistance: 95)
+            
             obstacles.append(obstacle)
         }
     }
-
+    
     func makeScoreLabel() {
         scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         scoreLabel.text = "Score: 0"
@@ -161,7 +205,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.zPosition = 10
         addChild(scoreLabel)
     }
-
+    
     func makeTimerLabel() {
         timerLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         timerLabel.text = "Time: 30"
@@ -172,93 +216,85 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         timerLabel.zPosition = 10
         addChild(timerLabel)
     }
-
+    
     func startTimer() {
         let wait = SKAction.wait(forDuration: 1.0)
-
+        
         let countdown = SKAction.run { [weak self] in
             guard let self = self else { return }
-
+            
             if self.timeLeft > 0 {
                 self.timeLeft -= 1
             } else {
                 self.endGame()
             }
         }
-
-        let sequence = SKAction.sequence([wait, countdown])
-        run(SKAction.repeatForever(sequence), withKey: "timer")
+        
+        run(SKAction.repeatForever(SKAction.sequence([wait, countdown])), withKey: "timer")
     }
-
-    func moveNodeToRandomPosition(_ node: SKNode) {
-        let padding: CGFloat = 75
-
-        let randomX = CGFloat.random(in: padding...(frame.width - padding))
-        let randomY = CGFloat.random(in: padding...(frame.height - padding))
-
-        node.position = CGPoint(x: randomX, y: randomY)
-    }
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard gameState == .playing else {
             startGame()
             return
         }
-
+        
         guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        movePlayer(to: location)
+        movePlayer(to: touch.location(in: self))
     }
-
+    
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard gameState == .playing else { return }
-
+        
         guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        movePlayer(to: location)
+        movePlayer(to: touch.location(in: self))
     }
-
+    
     func movePlayer(to point: CGPoint) {
+        let gameRect = safeGameRect()
+        
+        let safePoint = CGPoint(
+            x: min(max(point.x, gameRect.minX), gameRect.maxX),
+            y: min(max(point.y, gameRect.minY), gameRect.maxY)
+        )
+        
         player.removeAction(forKey: "move")
-
-        let moveAction = SKAction.move(to: point, duration: 0.18)
-        player.run(moveAction, withKey: "move")
+        player.run(SKAction.move(to: safePoint, duration: 0.18), withKey: "move")
     }
-
+    
     func didBegin(_ contact: SKPhysicsContact) {
         guard gameState == .playing else { return }
-
+        
         let categories = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
-
+        
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
             eatAudioPlayer?.currentTime = 0
             eatAudioPlayer?.play()
-
-            food.removeFromParent()
-            spawnFood()
+            respawnFood()
         }
-
+        
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
             score -= 1
             trashAudioPlayer?.currentTime = 0
             trashAudioPlayer?.play()
-
+            
             let hitNode = contact.bodyA.categoryBitMask == PhysicsCategory.obstacle
-                ? contact.bodyA.node
-                : contact.bodyB.node
-
-            if let obstacle = hitNode {
-                moveNodeToRandomPosition(obstacle)
+            ? contact.bodyA.node
+            : contact.bodyB.node
+            
+            if let obstacle = hitNode, let player = player, let food = food {
+                let avoidNodes: [SKNode] = [player, food] + obstacles.filter { $0 !== obstacle }
+                obstacle.position = randomSafePosition(avoiding: avoidNodes, minimumDistance: 95)
             }
         }
     }
-
+    
     func endGame() {
         gameState = .gameOver
         removeAction(forKey: "timer")
         player.removeAllActions()
-
+        
         gameOverLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         gameOverLabel.text = "Game Over!"
         gameOverLabel.fontSize = 34
@@ -266,7 +302,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + 35)
         gameOverLabel.zPosition = 20
         addChild(gameOverLabel)
-
+        
         let finalScoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         finalScoreLabel.text = "Final Score: \(score)"
         finalScoreLabel.fontSize = 24
@@ -274,7 +310,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         finalScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY - 5)
         finalScoreLabel.zPosition = 20
         addChild(finalScoreLabel)
-
+        
         let restartLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
         restartLabel.text = "Tap to play again"
         restartLabel.fontSize = 20
