@@ -12,12 +12,22 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     var player: SKSpriteNode!
     var food: SKShapeNode!
     var scoreLabel: SKLabelNode!
+    var timerLabel: SKLabelNode!
+    var gameOverLabel: SKLabelNode!
 
     var score = 0 {
         didSet {
             scoreLabel.text = "Score: \(score)"
         }
     }
+
+    var timeLeft = 30 {
+        didSet {
+            timerLabel.text = "Time: \(timeLeft)"
+        }
+    }
+
+    var gameIsOver = false
 
     struct PhysicsCategory {
         static let player: UInt32 = 0x1 << 0
@@ -32,6 +42,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         makePlayer()
         makeFood()
         makeScoreLabel()
+        makeTimerLabel()
+        startTimer()
     }
 
     func makePlayer() {
@@ -76,6 +88,35 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         addChild(scoreLabel)
     }
 
+    func makeTimerLabel() {
+        timerLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        timerLabel.text = "Time: 30"
+        timerLabel.fontSize = 24
+        timerLabel.fontColor = .white
+        timerLabel.horizontalAlignmentMode = .right
+        timerLabel.position = CGPoint(x: frame.width - 24, y: frame.height - 70)
+        timerLabel.zPosition = 10
+
+        addChild(timerLabel)
+    }
+
+    func startTimer() {
+        let wait = SKAction.wait(forDuration: 1.0)
+
+        let countdown = SKAction.run { [weak self] in
+            guard let self = self else { return }
+
+            if self.timeLeft > 0 {
+                self.timeLeft -= 1
+            } else {
+                self.endGame()
+            }
+        }
+
+        let sequence = SKAction.sequence([wait, countdown])
+        run(SKAction.repeatForever(sequence), withKey: "timer")
+    }
+
     func moveFoodToRandomPosition() {
         let padding: CGFloat = 50
 
@@ -86,6 +127,11 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard gameIsOver == false else {
+            restartGame()
+            return
+        }
+
         guard let touch = touches.first else { return }
 
         let location = touch.location(in: self)
@@ -98,7 +144,35 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
+        guard gameIsOver == false else { return }
+
         score += 1
         moveFoodToRandomPosition()
+    }
+
+    func endGame() {
+        gameIsOver = true
+        removeAction(forKey: "timer")
+        player.removeAllActions()
+
+        gameOverLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        gameOverLabel.text = "Game Over! Tap to Restart"
+        gameOverLabel.fontSize = 26
+        gameOverLabel.fontColor = .white
+        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        gameOverLabel.zPosition = 20
+
+        addChild(gameOverLabel)
+    }
+
+    func restartGame() {
+        removeAllChildren()
+        removeAllActions()
+
+        score = 0
+        timeLeft = 30
+        gameIsOver = false
+
+        didMove(to: view!)
     }
 }
