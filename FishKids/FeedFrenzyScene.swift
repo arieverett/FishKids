@@ -65,7 +65,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         loadSounds()
         makeBubbles()
         makePlayer()
-        makeFood()
+        spawnFood()
         makeObstacles()
         makeScoreLabel()
         makeTimerLabel()
@@ -120,7 +120,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         addChild(player)
     }
 
-    func makeFood() {
+    func spawnFood() {
         food = SKLabelNode(text: "🍤")
         food.fontSize = 34
         food.zPosition = 4
@@ -234,7 +234,9 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             score += 1
             eatAudioPlayer?.currentTime = 0
             eatAudioPlayer?.play()
-            moveNodeToRandomPosition(food)
+
+            food.removeFromParent()
+            spawnFood()
         }
 
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
