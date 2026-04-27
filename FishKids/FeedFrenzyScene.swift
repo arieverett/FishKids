@@ -12,7 +12,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
     var player: SKLabelNode!
     var food: SKLabelNode!
-    var trash: SKLabelNode!
+    var obstacles: [SKLabelNode] = []
+
     var scoreLabel: SKLabelNode!
     var timerLabel: SKLabelNode!
     var gameOverLabel: SKLabelNode!
@@ -37,7 +38,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     struct PhysicsCategory {
         static let player: UInt32 = 0x1 << 0
         static let food: UInt32 = 0x1 << 1
-        static let trash: UInt32 = 0x1 << 2
+        static let obstacle: UInt32 = 0x1 << 2
     }
 
     override func didMove(to view: SKView) {
@@ -49,7 +50,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         makeBubbles()
         makePlayer()
         makeFood()
-        makeTrash()
+        makeObstacles()
         makeScoreLabel()
         makeTimerLabel()
         startTimer()
@@ -97,18 +98,18 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         player.physicsBody?.isDynamic = true
         player.physicsBody?.affectedByGravity = false
         player.physicsBody?.categoryBitMask = PhysicsCategory.player
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.food | PhysicsCategory.trash
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.food | PhysicsCategory.obstacle
         player.physicsBody?.collisionBitMask = 0
 
         addChild(player)
     }
 
     func makeFood() {
-        food = SKLabelNode(text: "🫧")
+        food = SKLabelNode(text: "🍤")
         food.fontSize = 34
         food.zPosition = 4
 
-        food.physicsBody = SKPhysicsBody(circleOfRadius: 16)
+        food.physicsBody = SKPhysicsBody(circleOfRadius: 17)
         food.physicsBody?.isDynamic = false
         food.physicsBody?.categoryBitMask = PhysicsCategory.food
 
@@ -116,17 +117,24 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         moveNodeToRandomPosition(food)
     }
 
-    func makeTrash() {
-        trash = SKLabelNode(text: "🗑️")
-        trash.fontSize = 34
-        trash.zPosition = 4
+    func makeObstacles() {
+        obstacles.removeAll()
 
-        trash.physicsBody = SKPhysicsBody(circleOfRadius: 17)
-        trash.physicsBody?.isDynamic = false
-        trash.physicsBody?.categoryBitMask = PhysicsCategory.trash
+        let obstacleEmojis = ["🪨", "🪸", "⚓️", "🦀"]
 
-        addChild(trash)
-        moveNodeToRandomPosition(trash)
+        for emoji in obstacleEmojis {
+            let obstacle = SKLabelNode(text: emoji)
+            obstacle.fontSize = 34
+            obstacle.zPosition = 4
+
+            obstacle.physicsBody = SKPhysicsBody(circleOfRadius: 18)
+            obstacle.physicsBody?.isDynamic = false
+            obstacle.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
+
+            addChild(obstacle)
+            moveNodeToRandomPosition(obstacle)
+            obstacles.append(obstacle)
+        }
     }
 
     func makeScoreLabel() {
@@ -171,7 +179,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func moveNodeToRandomPosition(_ node: SKNode) {
-        let padding: CGFloat = 70
+        let padding: CGFloat = 75
 
         let randomX = CGFloat.random(in: padding...(frame.width - padding))
         let randomY = CGFloat.random(in: padding...(frame.height - padding))
@@ -208,11 +216,18 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             moveNodeToRandomPosition(food)
         }
 
-        if categories == PhysicsCategory.player | PhysicsCategory.trash {
+        if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
             score -= 1
             trashAudioPlayer?.currentTime = 0
             trashAudioPlayer?.play()
-            moveNodeToRandomPosition(trash)
+
+            let hitNode = contact.bodyA.categoryBitMask == PhysicsCategory.obstacle
+                ? contact.bodyA.node
+                : contact.bodyB.node
+
+            if let obstacle = hitNode {
+                moveNodeToRandomPosition(obstacle)
+            }
         }
     }
 
@@ -235,6 +250,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         removeAllChildren()
         removeAllActions()
 
+        obstacles.removeAll()
         score = 0
         timeLeft = 30
         gameIsOver = false
