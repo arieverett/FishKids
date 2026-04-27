@@ -6,15 +6,19 @@
 //
 
 import SpriteKit
+import AVFoundation
 
 class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
     var player: SKLabelNode!
-    var food: SKShapeNode!
-    var trash: SKShapeNode!
+    var food: SKLabelNode!
+    var trash: SKLabelNode!
     var scoreLabel: SKLabelNode!
     var timerLabel: SKLabelNode!
     var gameOverLabel: SKLabelNode!
+
+    var eatAudioPlayer: AVAudioPlayer?
+    var trashAudioPlayer: AVAudioPlayer?
 
     var score = 0 {
         didSet {
@@ -41,6 +45,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         physicsWorld.contactDelegate = self
 
+        loadSounds()
         makeBubbles()
         makePlayer()
         makeFood()
@@ -48,6 +53,18 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         makeScoreLabel()
         makeTimerLabel()
         startTimer()
+    }
+
+    func loadSounds() {
+        if let eatAsset = NSDataAsset(name: "eatSound") {
+            eatAudioPlayer = try? AVAudioPlayer(data: eatAsset.data)
+            eatAudioPlayer?.prepareToPlay()
+        }
+
+        if let trashAsset = NSDataAsset(name: "trashSound") {
+            trashAudioPlayer = try? AVAudioPlayer(data: trashAsset.data)
+            trashAudioPlayer?.prepareToPlay()
+        }
     }
 
     func makeBubbles() {
@@ -62,12 +79,17 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             )
             bubble.zPosition = 1
             addChild(bubble)
+
+            let moveUp = SKAction.moveBy(x: 0, y: frame.height + 50, duration: Double.random(in: 8...14))
+            let reset = SKAction.moveTo(y: -40, duration: 0)
+            let sequence = SKAction.sequence([moveUp, reset])
+            bubble.run(SKAction.repeatForever(sequence))
         }
     }
 
     func makePlayer() {
         player = SKLabelNode(text: "🐠")
-        player.fontSize = 42
+        player.fontSize = 46
         player.position = CGPoint(x: frame.midX, y: frame.midY)
         player.zPosition = 5
 
@@ -82,13 +104,11 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func makeFood() {
-        food = SKShapeNode(circleOfRadius: 14)
-        food.fillColor = .yellow
-        food.strokeColor = .white
-        food.lineWidth = 3
+        food = SKLabelNode(text: "🫧")
+        food.fontSize = 34
         food.zPosition = 4
 
-        food.physicsBody = SKPhysicsBody(circleOfRadius: 14)
+        food.physicsBody = SKPhysicsBody(circleOfRadius: 16)
         food.physicsBody?.isDynamic = false
         food.physicsBody?.categoryBitMask = PhysicsCategory.food
 
@@ -97,13 +117,11 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func makeTrash() {
-        trash = SKShapeNode(rectOf: CGSize(width: 32, height: 32), cornerRadius: 6)
-        trash.fillColor = .gray
-        trash.strokeColor = .white
-        trash.lineWidth = 3
+        trash = SKLabelNode(text: "🗑️")
+        trash.fontSize = 34
         trash.zPosition = 4
 
-        trash.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 32, height: 32))
+        trash.physicsBody = SKPhysicsBody(circleOfRadius: 17)
         trash.physicsBody?.isDynamic = false
         trash.physicsBody?.categoryBitMask = PhysicsCategory.trash
 
@@ -153,7 +171,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func moveNodeToRandomPosition(_ node: SKNode) {
-        let padding: CGFloat = 60
+        let padding: CGFloat = 70
 
         let randomX = CGFloat.random(in: padding...(frame.width - padding))
         let randomY = CGFloat.random(in: padding...(frame.height - padding))
@@ -185,11 +203,15 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
+            eatAudioPlayer?.currentTime = 0
+            eatAudioPlayer?.play()
             moveNodeToRandomPosition(food)
         }
 
         if categories == PhysicsCategory.player | PhysicsCategory.trash {
             score -= 1
+            trashAudioPlayer?.currentTime = 0
+            trashAudioPlayer?.play()
             moveNodeToRandomPosition(trash)
         }
     }
