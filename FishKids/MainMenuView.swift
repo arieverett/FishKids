@@ -10,8 +10,10 @@ import SwiftUI
 struct MainMenuView: View {
     let startFeedFrenzy: () -> Void
 
+    @State private var isSoundOn = AudioManager.shared.isSoundOn
+
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             Image("menuBackground")
                 .resizable()
                 .scaledToFill()
@@ -50,10 +52,28 @@ struct MainMenuView: View {
                 .shadow(radius: 4)
                 .padding(.top, 8)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
+
+            Button {
+                AudioManager.shared.toggleSound()
+                isSoundOn = AudioManager.shared.isSoundOn
+            } label: {
+                Text(isSoundOn ? "🔊" : "🔇")
+                    .font(.system(size: 26))
+                    .frame(width: 50, height: 50)
+                    .background(.black.opacity(0.45))
+                    .clipShape(Circle())
+            }
+            .padding(.top, 55)
+            .padding(.trailing, 20)
         }
         .onAppear {
-            AudioManager.shared.playMusic(named: "bgMusic")
+            isSoundOn = AudioManager.shared.isSoundOn
+
+            if isSoundOn {
+                AudioManager.shared.playMusic(named: "bgMusic")
+            }
         }
     }
 }

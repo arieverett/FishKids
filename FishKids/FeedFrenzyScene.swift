@@ -55,7 +55,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         startGame()
     }
     
-
+    
     
     func startGame() {
         removeAllChildren()
@@ -287,8 +287,11 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
-            eatAudioPlayer?.currentTime = 0
-            eatAudioPlayer?.play()
+            
+            if AudioManager.shared.isSoundOn {
+                eatAudioPlayer?.currentTime = 0
+                eatAudioPlayer?.play()
+            }
             
             food.removeFromParent()
             
@@ -301,9 +304,10 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
-            score -= 1
-            trashAudioPlayer?.currentTime = 0
-            trashAudioPlayer?.play()
+            if AudioManager.shared.isSoundOn {
+                trashAudioPlayer?.currentTime = 0
+                trashAudioPlayer?.play()
+            }
             
             let hitNode = contact.bodyA.categoryBitMask == PhysicsCategory.obstacle
             ? contact.bodyA.node

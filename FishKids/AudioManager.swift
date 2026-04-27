@@ -14,7 +14,28 @@ class AudioManager {
 
     private var musicPlayer: AVAudioPlayer?
 
+    var isSoundOn: Bool {
+        get {
+            UserDefaults.standard.bool(forKey: "isSoundOn")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "isSoundOn")
+
+            if newValue == false {
+                stopMusic()
+            }
+        }
+    }
+
+    private init() {
+        if UserDefaults.standard.object(forKey: "isSoundOn") == nil {
+            UserDefaults.standard.set(true, forKey: "isSoundOn")
+        }
+    }
+
     func playMusic(named assetName: String, loop: Bool = true) {
+        guard isSoundOn else { return }
+
         stopMusic()
 
         guard let musicAsset = NSDataAsset(name: assetName) else {
@@ -36,5 +57,13 @@ class AudioManager {
     func stopMusic() {
         musicPlayer?.stop()
         musicPlayer = nil
+    }
+
+    func toggleSound() {
+        isSoundOn.toggle()
+
+        if isSoundOn {
+            playMusic(named: "bgMusic")
+        }
     }
 }
