@@ -206,14 +206,23 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         }
 
         guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        movePlayer(to: location)
+    }
 
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard gameState == .playing else { return }
+
+        guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         movePlayer(to: location)
     }
 
     func movePlayer(to point: CGPoint) {
-        let moveAction = SKAction.move(to: point, duration: 0.45)
-        player.run(moveAction)
+        player.removeAction(forKey: "move")
+
+        let moveAction = SKAction.move(to: point, duration: 0.18)
+        player.run(moveAction, withKey: "move")
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
