@@ -10,6 +10,13 @@ import AVFoundation
 
 class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
+    enum GameState {
+        case playing
+        case gameOver
+    }
+
+    var gameState: GameState = .playing
+
     var player: SKLabelNode!
     var food: SKLabelNode!
     var obstacles: [SKLabelNode] = []
@@ -23,17 +30,15 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
     var score = 0 {
         didSet {
-            scoreLabel.text = "Score: \(score)"
+            scoreLabel?.text = "Score: \(score)"
         }
     }
 
     var timeLeft = 30 {
         didSet {
-            timerLabel.text = "Time: \(timeLeft)"
+            timerLabel?.text = "Time: \(timeLeft)"
         }
     }
-
-    var gameIsOver = false
 
     struct PhysicsCategory {
         static let player: UInt32 = 0x1 << 0
@@ -42,9 +47,20 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
-        backgroundColor = SKColor(red: 0.05, green: 0.55, blue: 0.75, alpha: 1.0)
+        startGame()
+    }
 
+    func startGame() {
+        removeAllChildren()
+        removeAllActions()
+
+        backgroundColor = SKColor(red: 0.05, green: 0.55, blue: 0.75, alpha: 1.0)
         physicsWorld.contactDelegate = self
+
+        obstacles.removeAll()
+        score = 0
+        timeLeft = 30
+        gameState = .playing
 
         loadSounds()
         makeBubbles()
@@ -118,8 +134,6 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func makeObstacles() {
-        obstacles.removeAll()
-
         let obstacleEmojis = ["🪨", "🪸", "⚓️", "🦀"]
 
         for emoji in obstacleEmojis {
@@ -143,9 +157,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontSize = 24
         scoreLabel.fontColor = .white
         scoreLabel.horizontalAlignmentMode = .left
-        scoreLabel.position = CGPoint(x: 24, y: frame.height - 70)
+        scoreLabel.position = CGPoint(x: 95, y: frame.height - 70)
         scoreLabel.zPosition = 10
-
         addChild(scoreLabel)
     }
 
@@ -157,7 +170,6 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         timerLabel.horizontalAlignmentMode = .right
         timerLabel.position = CGPoint(x: frame.width - 24, y: frame.height - 70)
         timerLabel.zPosition = 10
-
         addChild(timerLabel)
     }
 
@@ -188,8 +200,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard gameIsOver == false else {
-            restartGame()
+        guard gameState == .playing else {
+            startGame()
             return
         }
 
@@ -205,7 +217,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
-        guard gameIsOver == false else { return }
+        guard gameState == .playing else { return }
 
         let categories = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
 
@@ -232,29 +244,32 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func endGame() {
-        gameIsOver = true
+        gameState = .gameOver
         removeAction(forKey: "timer")
         player.removeAllActions()
 
         gameOverLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        gameOverLabel.text = "Game Over! Tap to Restart"
-        gameOverLabel.fontSize = 24
+        gameOverLabel.text = "Game Over!"
+        gameOverLabel.fontSize = 34
         gameOverLabel.fontColor = .white
-        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + 35)
         gameOverLabel.zPosition = 20
-
         addChild(gameOverLabel)
-    }
 
-    func restartGame() {
-        removeAllChildren()
-        removeAllActions()
+        let finalScoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        finalScoreLabel.text = "Final Score: \(score)"
+        finalScoreLabel.fontSize = 24
+        finalScoreLabel.fontColor = .yellow
+        finalScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY - 5)
+        finalScoreLabel.zPosition = 20
+        addChild(finalScoreLabel)
 
-        obstacles.removeAll()
-        score = 0
-        timeLeft = 30
-        gameIsOver = false
-
-        didMove(to: view!)
+        let restartLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
+        restartLabel.text = "Tap to play again"
+        restartLabel.fontSize = 20
+        restartLabel.fontColor = .white
+        restartLabel.position = CGPoint(x: frame.midX, y: frame.midY - 45)
+        restartLabel.zPosition = 20
+        addChild(restartLabel)
     }
 }
