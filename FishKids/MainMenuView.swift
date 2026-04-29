@@ -13,7 +13,7 @@ struct MainMenuView: View {
     @ObservedObject private var audio = AudioManager.shared
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack {
             Image("menuBackground")
                 .resizable()
                 .scaledToFill()
@@ -51,21 +51,21 @@ struct MainMenuView: View {
                 .foregroundStyle(.white.opacity(0.75))
                 .shadow(radius: 4)
                 .padding(.top, 8)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
 
-            Button {
-                audio.toggleSound()
-            } label: {
-                Text(audio.isSoundOn ? "🔊" : "🔇")
-                    .font(.system(size: 26))
-                    .frame(width: 50, height: 50)
-                    .background(.black.opacity(0.45))
-                    .clipShape(Circle())
+                Button {
+                    audio.toggleSound()
+                } label: {
+                    Text(audio.isSoundOn ? "🔊 Sound On" : "🔇 Sound Off")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(.black.opacity(0.45))
+                        .clipShape(Capsule())
+                }
+                .padding(.top, 6)
             }
-            .padding(.top, 55)
-            .padding(.trailing, 20)
+            .padding()
         }
         .onAppear {
             AudioManager.shared.playMusic(named: "bgMusic")

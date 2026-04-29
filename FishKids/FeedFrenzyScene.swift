@@ -278,12 +278,13 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         // food collision logic block
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
+            showScorePopup(text: "+1", color: .green)
 
             if score % 5 == 0 && extraObstacleCount < 3 {
                 spawnExtraObstacle()
                 extraObstacleCount += 1
             }
-            
+
             AudioManager.shared.playSFX(named: "eatSound")
 
             food.removeFromParent()
@@ -298,6 +299,9 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         // obstacle collision logic block
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
+            score -= 1
+            showScorePopup(text: "-1", color: .red)
+
             AudioManager.shared.playSFX(named: "trashSound")
 
             let hitNode = contact.bodyA.categoryBitMask == PhysicsCategory.obstacle
@@ -309,6 +313,23 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
                 obstacle.position = randomSafePosition(avoiding: avoidNodes, minimumDistance: 95)
             }
         }
+    }
+    
+    func showScorePopup(text: String, color: SKColor) {
+        let popup = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        popup.text = text
+        popup.fontSize = 24
+        popup.fontColor = color
+        popup.position = CGPoint(x: 210, y: frame.height - 70)
+        popup.zPosition = 25
+        addChild(popup)
+
+        let moveUp = SKAction.moveBy(x: 0, y: 28, duration: 0.45)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.45)
+        let group = SKAction.group([moveUp, fadeOut])
+        let remove = SKAction.removeFromParent()
+
+        popup.run(SKAction.sequence([group, remove]))
     }
 
     func endGame() {
