@@ -24,6 +24,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     var scoreLabel: SKLabelNode!
     var timerLabel: SKLabelNode!
     var gameOverLabel: SKLabelNode!
+    var extraObstacleCount = 0
 
     var score = 0 {
         didSet {
@@ -58,6 +59,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         obstacles.removeAll()
         score = 0
         timeLeft = 30
+        extraObstacleCount = 0
         gameState = .playing
 
         makeBubbles()
@@ -179,6 +181,26 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             obstacles.append(obstacle)
         }
     }
+    
+    func spawnExtraObstacle() {
+        let obstacleEmojis = ["🪨", "🪸", "⚓️", "🦀"]
+        let emoji = obstacleEmojis.randomElement() ?? "🪨"
+
+        let obstacle = SKLabelNode(text: emoji)
+        obstacle.fontSize = 34
+        obstacle.zPosition = 4
+
+        obstacle.physicsBody = SKPhysicsBody(circleOfRadius: 18)
+        obstacle.physicsBody?.isDynamic = false
+        obstacle.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
+
+        addChild(obstacle)
+
+        let avoidNodes: [SKNode] = [player, food] + obstacles
+        obstacle.position = randomSafePosition(avoiding: avoidNodes, minimumDistance: 95)
+
+        obstacles.append(obstacle)
+    }
 
     func makeScoreLabel() {
         scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
@@ -254,7 +276,11 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
-            AudioManager.shared.playSFX(named: "eatSound")
+
+            if score % 5 == 0 && extraObstacleCount < 3 {
+                spawnExtraObstacle()
+                extraObstacleCount += 1
+            }
 
             food.removeFromParent()
 
