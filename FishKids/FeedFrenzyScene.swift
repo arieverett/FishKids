@@ -285,6 +285,14 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         removeAction(forKey: "timer")
         player.removeAllActions()
 
+        let previousHighScore = UserDefaults.standard.integer(forKey: "feedFrenzyHighScore")
+
+        if score > previousHighScore {
+            UserDefaults.standard.set(score, forKey: "feedFrenzyHighScore")
+        }
+
+        let highScore = UserDefaults.standard.integer(forKey: "feedFrenzyHighScore")
+
         let overlay = SKShapeNode(rectOf: CGSize(width: frame.width, height: frame.height))
         overlay.fillColor = .black.withAlphaComponent(0.35)
         overlay.strokeColor = .clear
@@ -296,7 +304,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         gameOverLabel.text = "Game Over!"
         gameOverLabel.fontSize = 38
         gameOverLabel.fontColor = .white
-        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + 70)
+        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + 85)
         gameOverLabel.zPosition = 20
         addChild(gameOverLabel)
 
@@ -304,15 +312,23 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         finalScoreLabel.text = "Final Score: \(score)"
         finalScoreLabel.fontSize = 26
         finalScoreLabel.fontColor = .yellow
-        finalScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 20)
+        finalScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 35)
         finalScoreLabel.zPosition = 20
         addChild(finalScoreLabel)
+
+        let highScoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        highScoreLabel.text = "High Score: \(highScore)"
+        highScoreLabel.fontSize = 24
+        highScoreLabel.fontColor = .white
+        highScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY - 5)
+        highScoreLabel.zPosition = 20
+        addChild(highScoreLabel)
 
         let restartLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
         restartLabel.text = "Tap to Play Again"
         restartLabel.fontSize = 22
         restartLabel.fontColor = .white
-        restartLabel.position = CGPoint(x: frame.midX, y: frame.midY - 35)
+        restartLabel.position = CGPoint(x: frame.midX, y: frame.midY - 60)
         restartLabel.zPosition = 20
         addChild(restartLabel)
     }
