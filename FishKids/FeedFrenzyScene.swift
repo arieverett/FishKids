@@ -45,11 +45,12 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
-        AudioManager.shared.playMusic(named: "bgMusic")
         startGame()
     }
 
     func startGame() {
+        AudioManager.shared.playMusic(named: "bgMusic")
+        
         removeAllChildren()
         removeAllActions()
 
@@ -274,6 +275,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
 
         let categories = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
 
+        // food collision logic block
         if categories == PhysicsCategory.player | PhysicsCategory.food {
             score += 1
 
@@ -281,6 +283,8 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
                 spawnExtraObstacle()
                 extraObstacleCount += 1
             }
+            
+            AudioManager.shared.playSFX(named: "eatSound")
 
             food.removeFromParent()
 
@@ -292,6 +296,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
             run(SKAction.sequence([wait, spawn]))
         }
 
+        // obstacle collision logic block
         if categories == PhysicsCategory.player | PhysicsCategory.obstacle {
             AudioManager.shared.playSFX(named: "trashSound")
 

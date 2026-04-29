@@ -8,54 +8,41 @@
 import Foundation
 import UIKit
 import AVFoundation
-import Combine
 
 final class AudioManager: ObservableObject {
     static let shared = AudioManager()
 
     private var musicPlayer: AVAudioPlayer?
+    private var sfxPlayers: [AVAudioPlayer] = []
     private var currentMusicName: String?
 
-    @Published var isMusicOn: Bool {
+    @Published var isSoundOn: Bool {
         didSet {
-            UserDefaults.standard.set(isMusicOn, forKey: "isMusicOn")
-            if isMusicOn {
-                if let name = currentMusicName {
-                    playMusic(named: name)
+            UserDefaults.standard.set(isSoundOn, forKey: "isSoundOn")
+
+            if isSoundOn {
+                if let currentMusicName {
+                    playMusic(named: currentMusicName)
                 }
             } else {
-                musicPlayer?.pause()
+                stopMusic()
             }
         }
     }
 
-    @Published var isSFXOn: Bool {
-        didSet {
-            UserDefaults.standard.set(isSFXOn, forKey: "isSFXOn")
-        }
-    }
-
     private init() {
-        if UserDefaults.standard.object(forKey: "isMusicOn") == nil {
-            UserDefaults.standard.set(true, forKey: "isMusicOn")
-        }
-        if UserDefaults.standard.object(forKey: "isSFXOn") == nil {
-            UserDefaults.standard.set(true, forKey: "isSFXOn")
+        if UserDefaults.standard.object(forKey: "isSoundOn") == nil {
+            UserDefaults.standard.set(true, forKey: "isSoundOn")
         }
 
-        self.isMusicOn = UserDefaults.standard.bool(forKey: "isMusicOn")
-        self.isSFXOn = UserDefaults.standard.bool(forKey: "isSFXOn")
+        isSoundOn = UserDefaults.standard.bool(forKey: "isSoundOn")
     }
 
     func playMusic(named assetName: String, loop: Bool = true) {
         currentMusicName = assetName
-        guard isMusicOn else { return }
-
-        if musicPlayer?.isPlaying == true {
-            return
-        }
-
         stopMusic()
+
+        guard isSoundOn else { return }
 
         guard let asset = NSDataAsset(name: assetName) else {
             print("Music asset not found: \(assetName)")
@@ -78,23 +65,29 @@ final class AudioManager: ObservableObject {
         musicPlayer = nil
     }
 
+    func toggleSound() {
+        isSoundOn.toggle()
+    }
+
     func playSFX(named assetName: String) {
-        guard isSFXOn else { return }
+        guard isSoundOn else { return }
 
         guard let asset = NSDataAsset(name: assetName) else {
             print("SFX asset not found: \(assetName)")
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let player = try AVAudioPlayer(data: asset.data)
-                player.prepareToPlay()
-                player.play()
-                Thread.sleep(forTimeInterval: player.duration + 0.1)
-            } catch {
-                print("Error playing SFX: \(error)")
+        do {
+            let player = try AVAudioPlayer(data: asset.data)
+            sfxPlayers.append(player)
+            player.prepareToPlay()
+            player.play()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + player.duration + 0.1) { [weak self, weak player] in
+                self?.sfxPlayers.removeAll { $0 === player }
             }
+        } catch {
+            print("Error playing SFX: \(error)")
         }
     }
 }
