@@ -209,7 +209,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontSize = 24
         scoreLabel.fontColor = .white
         scoreLabel.horizontalAlignmentMode = .left
-        scoreLabel.position = CGPoint(x: 95, y: frame.height - 70)
+        scoreLabel.position = CGPoint(x: 16, y: frame.height - 70)
         scoreLabel.zPosition = 10
         addChild(scoreLabel)
     }
@@ -267,7 +267,7 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
         )
 
         player.removeAction(forKey: "move")
-        player.run(SKAction.move(to: safePoint, duration: 0.18), withKey: "move")
+        player.position = safePoint
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
@@ -318,18 +318,20 @@ class FeedFrenzyScene: SKScene, SKPhysicsContactDelegate {
     func showScorePopup(text: String, color: SKColor) {
         let popup = SKLabelNode(fontNamed: "AvenirNext-Bold")
         popup.text = text
-        popup.fontSize = 24
+        popup.fontSize = 52
         popup.fontColor = color
-        popup.position = CGPoint(x: 210, y: frame.height - 70)
+        popup.position = CGPoint(x: frame.midX, y: frame.midY)
         popup.zPosition = 25
+        popup.setScale(0.75)
         addChild(popup)
 
-        let moveUp = SKAction.moveBy(x: 0, y: 28, duration: 0.45)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.45)
+        let scaleUp = SKAction.scale(to: 1.25, duration: 0.12)
+        let moveUp = SKAction.moveBy(x: 0, y: 44, duration: 0.55)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.55)
         let group = SKAction.group([moveUp, fadeOut])
         let remove = SKAction.removeFromParent()
 
-        popup.run(SKAction.sequence([group, remove]))
+        popup.run(SKAction.sequence([scaleUp, group, remove]))
     }
 
     func endGame() {

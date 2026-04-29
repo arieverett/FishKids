@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  FishKids
-//
-//  Created by Ari Everett on 4/21/26.
-//
-
 import SwiftUI
 import SpriteKit
 
@@ -15,6 +8,7 @@ struct ContentView: View {
     }
 
     @State private var screen: Screen = .menu
+    @State private var feedFrenzyScene = FeedFrenzyScene(size: CGSize(width: 390, height: 844))
 
     var body: some View {
         switch screen {
@@ -26,10 +20,15 @@ struct ContentView: View {
         case .feedFrenzy:
             ZStack(alignment: .topLeading) {
                 GeometryReader { geo in
-                    let scene = FeedFrenzyScene(size: geo.size)
-
-                    SpriteView(scene: scene)
-                        .ignoresSafeArea()
+                    SpriteView(
+                        scene: feedFrenzyScene,
+                        options: [.ignoresSiblingOrder]
+                    )
+                    .ignoresSafeArea()
+                    .onAppear {
+                        feedFrenzyScene.size = geo.size
+                        feedFrenzyScene.scaleMode = .resizeFill
+                    }
                 }
 
                 Button {
@@ -49,7 +48,3 @@ struct ContentView: View {
         }
     }
 }
-
-//#Preview {
-//    ContentView()
-//}
